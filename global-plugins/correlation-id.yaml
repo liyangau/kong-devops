@@ -1,0 +1,6 @@
+plugins:
+- name: correlation-id
+  config:
+    echo_downstream: true
+    generator: uuid#counter
+    header_name: Kong-Request-ID

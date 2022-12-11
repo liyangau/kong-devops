@@ -1,0 +1,7 @@
+plugins:
+- name: rate-limiting
+  config:
+    policy: local
+    minute: 30
+    hour: 500
+    limit_by: consumer

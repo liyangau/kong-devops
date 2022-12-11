@@ -1,0 +1,41 @@
+name: Offboard APIs
+
+on:
+  push:
+    branches:
+     - offboard
+  workflow_dispatch:
+
+jobs:
+  onboard-services-configs:
+    name: offloading Kong configs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev]
+        include:
+          - env: dev
+            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
+            HOST_NAME: ${{ secrets.DEV_HOSTNAME }}
+        folders:
+          - echo
+    env:
+      KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
+      DECK_SERVICE_TAG: ${{ matrix.folders }}
+      DECK_PROXY_HOSTNAME: ${{ matrix.HOST_NAME }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - name: Install Deck
+        run: |
+          curl -sL https://github.com/Kong/deck/releases/download/v1.16.1/deck_1.16.1_linux_amd64.tar.gz -o deck.tar.gz
+          tar -xf deck.tar.gz -C /tmp
+          sudo cp /tmp/deck /usr/local/bin/
+      - name: Check Control plane is reachable
+        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+      - name: Delete Kong entities related to $DECK_SERVICE_TAG-svc tag
+        run: |
+          deck reset --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            --select-tag $DECK_SERVICE_TAG-svc \
+            --force

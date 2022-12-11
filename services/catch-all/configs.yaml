@@ -1,0 +1,6 @@
+routes:
+- name: ${{ env "DECK_SERVICE_TAG" }}-catch-all-route
+  hosts:
+    - ${{ env "DECK_PROXY_HOSTNAME" }}
+  paths:
+    - /

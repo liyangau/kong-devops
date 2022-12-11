@@ -1,0 +1,3 @@
+plugins:
+- name: basic-auth
+  route: ${{ env "DECK_SERVICE_TAG" }}-basic-auth-route

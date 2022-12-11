@@ -1,0 +1,6 @@
+plugins:
+- name: request-termination
+  route: ${{ env "DECK_SERVICE_TAG" }}-catch-all-route
+  config:
+    message: "🚧😮‍💨"
+    status_code: 503

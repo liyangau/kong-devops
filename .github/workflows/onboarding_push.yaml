@@ -1,0 +1,112 @@
+name: Onboard APIs
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - id: get-folders
+        run: echo "::set-output name=folder_matrix::$(find services/* -maxdepth 0 -type d | cut -d"/" -f2 | jq -R -s -c 'split("\n")[:-1]')"
+    outputs:
+      folder_matrix: ${{ steps.get-folders.outputs.folder_matrix }}
+  push-global-configs:
+    name: Deploy global Kong configs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev]
+        include:
+          - env: dev
+            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
+    env:
+      KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - name: Install Deck
+        run: |
+          curl -sL https://github.com/Kong/deck/releases/download/v1.16.1/deck_1.16.1_linux_amd64.tar.gz -o deck.tar.gz
+          tar -xf deck.tar.gz -C /tmp
+          sudo cp /tmp/deck /usr/local/bin/
+      - name: Check Control plane is reachable
+        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+      - name: Check differences for Global Plugins
+        run: |
+          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s global-plugins/
+      - name: Check differences for Consumers
+        run: |
+          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s consumers/
+      - name: Sync Global Plugins
+        run: |
+          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s global-plugins/
+      - name: Sync Consumers
+        run: |
+          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s consumers/
+
+  push-services-configs:
+    needs: build-matrix
+    name: Deploy Kong configs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev]
+        include:
+          - env: dev
+            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
+            HOST_NAME: ${{ secrets.DEV_HOSTNAME }}
+        exclude:
+          - env: dev
+            folders: echo
+        folders: ${{ fromJson(needs.build-matrix.outputs.folder_matrix) }}
+
+    env:
+      KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
+      DECK_SERVICE_TAG: ${{ matrix.folders }}
+      DECK_PROXY_HOSTNAME: ${{ matrix.HOST_NAME }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - name: Install Deck
+        run: |
+          curl -sL https://github.com/Kong/deck/releases/download/v1.16.1/deck_1.16.1_linux_amd64.tar.gz -o deck.tar.gz
+          tar -xf deck.tar.gz -C /tmp
+          sudo cp /tmp/deck /usr/local/bin/
+      - name: Check Control plane is reachable
+        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+      - name: Validate configs
+        run: |
+          deck validate --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s meta.yaml \
+            --parallelism 1 \
+            -s services/${{ matrix.folders }}/configs.yaml \
+            -s services/${{ matrix.folders }}/plugins/
+      - name: Check difference between current and new configs
+        run: |
+          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s meta.yaml \
+            --parallelism 1 \
+            -s services/${{ matrix.folders }}/configs.yaml \
+            -s services/${{ matrix.folders }}/plugins/
+      - name: Sync config to upstream
+        run: |
+          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "Authorization:Basic $KONG_AUTH_HEADER" \
+            -s meta.yaml \
+            --parallelism 1 \
+            -s services/${{ matrix.folders }}/configs.yaml \
+            -s services/${{ matrix.folders }}/plugins/

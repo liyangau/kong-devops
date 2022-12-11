@@ -1,0 +1,7 @@
+consumers:
+  - username: test
+    basicauth_credentials:
+      - password: test
+        username: test
+    keyauth_credentials:
+      - key: test
