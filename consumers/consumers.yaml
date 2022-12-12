@@ -5,3 +5,7 @@ consumers:
         username: test
     keyauth_credentials:
       - key: test
+    jwt_secrets:
+    - algorithm: HS256
+      key: g9xHvwpWwJsFLW7zNXkdN7pN9rFHFMq7
+      secret: x733ggnmmLLLnMLXmrkdcFMm9h3xVc9T

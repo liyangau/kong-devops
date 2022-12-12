@@ -1,0 +1,5 @@
+plugins:
+- name: proxy-cache
+  config:
+    strategy: memory
+    cache_ttl: 300
