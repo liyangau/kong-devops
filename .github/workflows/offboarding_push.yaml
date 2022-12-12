@@ -4,7 +4,8 @@ on:
   push:
     branches:
      - offboard
-
+    paths-ignore:
+      - '**/README.md'
 jobs:
   offboard-services-configs:
     name: offloading Kong configs
