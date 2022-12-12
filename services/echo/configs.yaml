@@ -18,3 +18,8 @@ services:
           - ${{ env "DECK_PROXY_HOSTNAME" }}
         paths:
           - /key
+      - name: ${{ env "DECK_SERVICE_TAG" }}-jwt-auth-route
+        hosts:
+          - ${{ env "DECK_PROXY_HOSTNAME" }}
+        paths:
+          - /jwt

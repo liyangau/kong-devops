@@ -1,0 +1,3 @@
+plugins:
+- name: jwt
+  route: ${{ env "DECK_SERVICE_TAG" }}-jwt-auth-route
