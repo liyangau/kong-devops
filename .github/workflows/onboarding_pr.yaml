@@ -3,7 +3,7 @@ name: Onboard APIs checks
 on:
   pull_request:
     branches:
-      - master
+      - main
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v3
       - id: get-folders
-        run: echo "::set-output name=folder_matrix::$(find services/* -maxdepth 0 -type d | cut -d"/" -f2 | jq -R -s -c 'split("\n")[:-1]')"
+        run: echo "folder_matrix=$(find services/* -maxdepth 0 -type d | cut -d"/" -f2 | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
     outputs:
       folder_matrix: ${{ steps.get-folders.outputs.folder_matrix }}
 
@@ -73,7 +73,7 @@ jobs:
             HOST_NAME: DEV_HOSTNAME
         exclude:
           - env: dev
-            folders: echo
+            folders: some-service
         folders: ${{ fromJson(needs.build-matrix.outputs.folder_matrix) }}
     env:
       KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}

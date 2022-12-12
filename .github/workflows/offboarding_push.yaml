@@ -4,10 +4,9 @@ on:
   push:
     branches:
      - offboard
-  workflow_dispatch:
 
 jobs:
-  onboard-services-configs:
+  offboard-services-configs:
     name: offloading Kong configs
     runs-on: ubuntu-latest
     strategy:
@@ -15,14 +14,14 @@ jobs:
         env: [dev]
         include:
           - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
-            HOST_NAME: ${{ secrets.DEV_HOSTNAME }}
+            ADMIN_API_URL: DEV_ADMIN_ADDRESS
+            HOST_NAME: DEV_HOSTNAME
         folders:
           - echo
     env:
       KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
       DECK_SERVICE_TAG: ${{ matrix.folders }}
-      DECK_PROXY_HOSTNAME: ${{ matrix.HOST_NAME }}
+      DECK_PROXY_HOSTNAME: ${{ secrets[matrix.HOST_NAME] }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@v3
@@ -32,10 +31,10 @@ jobs:
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
-        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+        run: deck ping --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
       - name: Delete Kong entities related to $DECK_SERVICE_TAG-svc tag
         run: |
-          deck reset --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck reset --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             --select-tag $DECK_SERVICE_TAG-svc \
             --force

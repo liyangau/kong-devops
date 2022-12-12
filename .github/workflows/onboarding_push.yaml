@@ -11,9 +11,10 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v3
       - id: get-folders
-        run: echo "::set-output name=folder_matrix::$(find services/* -maxdepth 0 -type d | cut -d"/" -f2 | jq -R -s -c 'split("\n")[:-1]')"
+        run: echo "folder_matrix=$(find services/* -maxdepth 0 -type d | cut -d"/" -f2 | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
     outputs:
       folder_matrix: ${{ steps.get-folders.outputs.folder_matrix }}
+
   push-global-configs:
     name: Deploy global Kong configs
     runs-on: ubuntu-latest
@@ -22,7 +23,7 @@ jobs:
         env: [dev]
         include:
           - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
+            ADMIN_API_URL: DEV_ADMIN_ADDRESS
     env:
       KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
     steps:
@@ -34,25 +35,25 @@ jobs:
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
-        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+        run: deck ping --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
       - name: Check differences for Global Plugins
         run: |
-          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck diff --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s global-plugins/
       - name: Check differences for Consumers
         run: |
-          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck diff --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s consumers/
       - name: Sync Global Plugins
         run: |
-          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck sync --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s global-plugins/
       - name: Sync Consumers
         run: |
-          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck sync --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s consumers/
 
@@ -65,17 +66,17 @@ jobs:
         env: [dev]
         include:
           - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_ADDRESS }}
-            HOST_NAME: ${{ secrets.DEV_HOSTNAME }}
+            ADMIN_API_URL: DEV_ADMIN_ADDRESS
+            HOST_NAME: DEV_HOSTNAME
         exclude:
           - env: dev
-            folders: echo
+            folders: some-service
         folders: ${{ fromJson(needs.build-matrix.outputs.folder_matrix) }}
 
     env:
       KONG_AUTH_HEADER: ${{ secrets.KONG_AUTH_HEADER }}
       DECK_SERVICE_TAG: ${{ matrix.folders }}
-      DECK_PROXY_HOSTNAME: ${{ matrix.HOST_NAME }}
+      DECK_PROXY_HOSTNAME: ${{ secrets[matrix.HOST_NAME] }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@v3
@@ -85,10 +86,10 @@ jobs:
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
-        run: deck ping --kong-addr "${{ matrix.ADMIN_API_URL }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
+        run: deck ping --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" --headers "Authorization:Basic $KONG_AUTH_HEADER"
       - name: Validate configs
         run: |
-          deck validate --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck validate --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s meta.yaml \
             --parallelism 1 \
@@ -96,7 +97,7 @@ jobs:
             -s services/${{ matrix.folders }}/plugins/
       - name: Check difference between current and new configs
         run: |
-          deck diff --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck diff --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s meta.yaml \
             --parallelism 1 \
@@ -104,7 +105,7 @@ jobs:
             -s services/${{ matrix.folders }}/plugins/
       - name: Sync config to upstream
         run: |
-          deck sync --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck sync --kong-addr "${{ secrets[matrix.ADMIN_API_URL] }}" \
             --headers "Authorization:Basic $KONG_AUTH_HEADER" \
             -s meta.yaml \
             --parallelism 1 \
