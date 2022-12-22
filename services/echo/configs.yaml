@@ -4,22 +4,14 @@ services:
     url: http://echo
     routes:
       - name: ${{ env "DECK_SERVICE_TAG" }}-test-route
-        hosts:
-          - ${{ env "DECK_PROXY_HOSTNAME" }}
         paths:
           - /echo
       - name: ${{ env "DECK_SERVICE_TAG" }}-basic-auth-route
-        hosts:
-          - ${{ env "DECK_PROXY_HOSTNAME" }}
         paths:
           - /basic
       - name: ${{ env "DECK_SERVICE_TAG" }}-key-auth-route
-        hosts:
-          - ${{ env "DECK_PROXY_HOSTNAME" }}
         paths:
           - /key
       - name: ${{ env "DECK_SERVICE_TAG" }}-jwt-auth-route
-        hosts:
-          - ${{ env "DECK_PROXY_HOSTNAME" }}
         paths:
           - /jwt
