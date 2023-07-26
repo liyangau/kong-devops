@@ -1,5 +1,12 @@
 consumers:
   - username: test
+    plugins:
+    - name: rate-limiting
+      _config: redis
+      config:
+        minute: 100
+        hour: 1000
+      enabled: true
     basicauth_credentials:
       - password: test
         username: test
@@ -7,5 +14,22 @@ consumers:
       - key: test
     jwt_secrets:
     - algorithm: HS256
-      key: g9xHvwpWwJsFLW7zNXkdN7pN9rFHFMq7
-      secret: x733ggnmmLLLnMLXmrkdcFMm9h3xVc9T
+      key: ahQu8sheer3ipieng5ah
+      secret: fi8Loh0dooshahpuloit
+  - username: demo
+    plugins:
+    - name: rate-limiting
+      _config: redis
+      config:
+        minute: 20
+        hour: 500
+      enabled: true
+    basicauth_credentials:
+      - password: demo
+        username: demo
+    keyauth_credentials:
+      - key: demo
+    jwt_secrets:
+    - algorithm: HS256
+      key: faegiS4eetieghelahfa
+      secret: Ohm7chae4zoowea0eihu

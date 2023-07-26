@@ -1,0 +1,8 @@
+_plugin_configs:
+  redis:
+    policy: redis
+    redis_host: redis-demo
+    redis_username: default
+    redis_password: A-SUPER-STRONG-DEMO-PASSWORD
+    error_message: API rate limit exceeded 🛑
+    redis_port: 6379

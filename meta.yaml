@@ -14,8 +14,6 @@ _info:
       request_buffering: true
       response_buffering: true
       strip_path: true
-      hosts:
-        - ${{ env "DECK_PROXY_HOSTNAME" }}
       protocols:
         - https
   select_tags:

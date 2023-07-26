@@ -1,0 +1,17 @@
+plugins:
+- config:
+    account_email: admin@demofor.fun
+    allow_any_domain: false
+    api_uri: https://api.buypass.com/acme/directory
+    cert_type: ecc
+    domains:
+    - test.demofor.fun
+    storage: redis
+    storage_config:
+      redis:
+        auth: A-SUPER-STRONG-DEMO-PASSWORD
+        host: redis-demo
+        port: 6379
+    tos_accepted: true
+  enabled: true
+  name: acme
