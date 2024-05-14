@@ -1,17 +1,17 @@
 services:
-  - name: ${{ env "DECK_SERVICE_TAG" }}-service
-    enabled: true
-    url: http://echo
-    routes:
-      - name: ${{ env "DECK_SERVICE_TAG" }}-test-route
-        paths:
-          - /echo
-      - name: ${{ env "DECK_SERVICE_TAG" }}-basic-auth-route
-        paths:
-          - /basic
-      - name: ${{ env "DECK_SERVICE_TAG" }}-key-auth-route
-        paths:
-          - /key
-      - name: ${{ env "DECK_SERVICE_TAG" }}-jwt-auth-route
-        paths:
-          - /jwt
+- name: ${{ env "DECK_SERVICE_TAG" }}-service
+  enabled: true
+  url: https://echo
+  routes:
+    - name: ${{ env "DECK_SERVICE_TAG" }}-test-route
+      paths:
+        - /echo
+    - name: ${{ env "DECK_SERVICE_TAG" }}-basic-auth-route
+      paths:
+        - /echo/basic
+    - name: ${{ env "DECK_SERVICE_TAG" }}-key-auth-route
+      paths:
+        - /echo/key
+    - name: ${{ env "DECK_SERVICE_TAG" }}-jwt-auth-route
+      paths:
+        - /echo/jwt

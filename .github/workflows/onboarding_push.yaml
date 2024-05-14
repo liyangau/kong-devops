@@ -40,51 +40,51 @@ jobs:
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
         run: |
-          deck ping \
+          deck gateway ping \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
       - name: Validate Global Plugins
         run: |
-          deck validate \
+          deck gateway validate \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s global-plugins/
+            plugin-conf/ \
+            global-plugins/
       - name: Validate Consumers
         run: |
-          deck validate \
+          deck gateway validate \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s consumers/
+            plugin-conf/ \
+            consumers/
       - name: Check differences for Global Plugins
         run: |
-          deck diff \
+          deck gateway diff \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s global-plugins/
+            plugin-conf/ \
+            global-plugins/
       - name: Check differences for Consumers
         run: |
-          deck diff \
+          deck gateway diff \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s consumers/
+            plugin-conf/ \
+            consumers/
       - name: Sync Global Plugins
         run: |
-          deck sync \
+          deck gateway sync \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s global-plugins/
+            plugin-conf/ \
+            global-plugins/
       - name: Sync Consumers
         run: |
-          deck sync \
+          deck gateway sync \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            -s plugin-conf/ \
-            -s consumers/
+            plugin-conf/ \
+            consumers/
 
 
   check-services-configs:
@@ -101,6 +101,8 @@ jobs:
         exclude:
           - env: dev
             folders: acme
+          - env: dev
+            folders: catch-all
         folders: ${{ fromJson(needs.build-matrix.outputs.folder_matrix) }}
     env:
       DECK_VERSION: ${{ env.DECK_VERSION }}
@@ -115,36 +117,62 @@ jobs:
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
         run: |
-          deck ping \
+          deck gateway ping \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
       - name: Validate configs
         run: |
-          deck validate \
+          deck file validate \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            --parallelism 1 \
-            -s meta.yaml \
-            -s plugin-conf/ \
-            -s services/${{ matrix.folders }}/configs.yaml \
-            -s services/${{ matrix.folders }}/plugins/
+            meta.yaml \
+            plugin-conf/ \
+            services/${{ matrix.folders }}/configs.yaml \
+            services/${{ matrix.folders }}/plugins/
+      - name: Global lint service and route
+        run: |
+          deck file render \
+            meta.yaml \
+            services/${{ matrix.folders }}/configs.yaml \
+            | deck file lint -s - global-linter.yaml
+      - name: Global lint plugins
+        run: |
+          deck file merge \
+            services/${{ matrix.folders }}/plugins/* \
+            | deck file lint -s - global-linter.yaml
+      - name: Check local linter existence
+        id: check_files
+        uses: andstor/file-existence-action@v3
+        with:
+          files: "services/${{ matrix.folders }}/linter.yaml"
+      - name: Local lint service and route
+        if: steps.check_files.outputs.files_exists == 'true'
+        run: |
+          deck file render \
+            meta.yaml \
+            services/${{ matrix.folders }}/configs.yaml \
+            | deck file lint -s - services/${{ matrix.folders }}/linter.yaml
+      - name: Local lint plugins
+        if: steps.check_files.outputs.files_exists == 'true'
+        run: |
+          deck file merge \
+            services/${{ matrix.folders }}/plugins/* \
+            | deck file lint -s - services/${{ matrix.folders }}/linter.yaml
       - name: Check difference between current and new configs
         run: |
-          deck diff \
+          deck gateway diff \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            --parallelism 1 \
-            -s meta.yaml \
-            -s plugin-conf/ \
-            -s services/${{ matrix.folders }}/configs.yaml \
-            -s services/${{ matrix.folders }}/plugins/
+            meta.yaml \
+            plugin-conf/ \
+            services/${{ matrix.folders }}/configs.yaml \
+            services/${{ matrix.folders }}/plugins/
       - name: Sync config to upstream
         run: |
-          deck sync \
+          deck gateway sync \
             --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
             --kong-addr "${{ matrix.ADMIN_API_URL }}" \
-            --parallelism 1 \
-            -s meta.yaml \
-            -s plugin-conf/ \
-            -s services/${{ matrix.folders }}/configs.yaml \
-            -s services/${{ matrix.folders }}/plugins
+            meta.yaml \
+            plugin-conf/ \
+            services/${{ matrix.folders }}/configs.yaml \
+            services/${{ matrix.folders }}/plugins

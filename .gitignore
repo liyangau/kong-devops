@@ -3,3 +3,4 @@ gh.secrets
 .secrets
 .vscode
 .env
+.DS_Store

@@ -3,7 +3,7 @@ services:
   host: 127.0.0.1
   name: ${{ env "DECK_SERVICE_TAG" }}-service
   port: 65535
-  protocol: http
+  protocol: https
   routes:
   - hosts:
     - test.demofor.fun

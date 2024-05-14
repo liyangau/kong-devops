@@ -1,7 +1,7 @@
 services:
 - name: ${{ env "DECK_SERVICE_TAG" }}-service
   enabled: true
-  url: http://httpbin
+  url: https://httpbin
   routes:
   - name: ${{ env "DECK_SERVICE_TAG" }}-test-route
     snis: ["test.demofor.fun"]

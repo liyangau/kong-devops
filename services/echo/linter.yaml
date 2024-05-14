@@ -1,0 +1,9 @@
+rules:
+  echo-path-check-service:
+    description: "Ensure route path must start with /echo"
+    given: $.services[*].routes[*].paths
+    severity: error
+    then:
+      function: pattern
+      functionOptions:
+        match: "^/echo"

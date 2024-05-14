@@ -1,0 +1,27 @@
+rules:
+  no-root-path:
+    description: "Ensure no route is defined at the root level"
+    given: $.routes[*]
+    severity: error
+    then:
+      - field: "name"
+        function: falsy
+  service-https-check:
+    description: "Ensure https usage in Kong GW Services"
+    given: $.services[*].protocol
+    severity: error
+    then:
+      function: pattern
+      functionOptions:
+        match: "^https$"
+  no-global-plugin:
+    description: "Ensure no global plugin is defined"
+    severity: error
+    given: "$.plugins[*]"
+    then:
+      function: xor
+      functionOptions:
+        properties:
+          - service
+          - route
+    message: "Plugin object must have either 'service' or 'route' property."
