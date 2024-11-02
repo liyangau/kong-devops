@@ -23,69 +23,71 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev]
-        include:
-          - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_API_URL }}
-            ADMIN_API_AUTH_HEADER: ${{ secrets.DEV_ADMIN_API_AUTH_HEADER }}
-    env:
-      DECK_VERSION: ${{ env.DECK_VERSION }}
+        env: 
+          - dev
     steps:
+      - name: Set environment-specific variables
+        run: |
+          # Convert env to uppercase for secret names
+          ENV_UPPER=$(echo "${{ matrix.env }}" | tr '[:lower:]' '[:upper:]')
+          
+          # Use the environment context to get secrets
+          echo "ADMIN_API_URL=${{ secrets[format('{0}_ADMIN_API_URL', matrix.env)] }}" >> $GITHUB_ENV
+          echo "ADMIN_API_AUTH_HEADER=${{ secrets[format('{0}_ADMIN_API_AUTH_HEADER', matrix.env)] }}" >> $GITHUB_ENV
       - name: Checkout branch
         uses: actions/checkout@v3
       - name: Install Deck
         run: |
-          curl -sL https://github.com/Kong/deck/releases/download/v${DECK_VERSION}/deck_${DECK_VERSION}_linux_amd64.tar.gz -o deck.tar.gz
+          curl -sL https://github.com/Kong/deck/releases/download/v${{ env.DECK_VERSION }}/deck_${{ env.DECK_VERSION }}_linux_amd64.tar.gz -o deck.tar.gz
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
         run: |
           deck gateway ping \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
       - name: Validate Global Plugins
         run: |
           deck gateway validate \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             global-plugins/
       - name: Validate Consumers
         run: |
           deck gateway validate \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             consumers/
       - name: Check differences for Global Plugins
         run: |
           deck gateway diff \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             global-plugins/
       - name: Check differences for Consumers
         run: |
           deck gateway diff \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             consumers/
       - name: Sync Global Plugins
         run: |
           deck gateway sync \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             global-plugins/
       - name: Sync Consumers
         run: |
           deck gateway sync \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             plugin-conf/ \
             consumers/
-
 
   check-services-configs:
     needs: build-matrix
@@ -93,11 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev]
-        include:
-          - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_API_URL }}
-            ADMIN_API_AUTH_HEADER: ${{ secrets.DEV_ADMIN_API_AUTH_HEADER }}
+        env: 
+          - dev
         exclude:
           - env: dev
             folders: acme
@@ -105,26 +104,33 @@ jobs:
             folders: catch-all
         folders: ${{ fromJson(needs.build-matrix.outputs.folder_matrix) }}
     env:
-      DECK_VERSION: ${{ env.DECK_VERSION }}
       DECK_SERVICE_TAG: ${{ matrix.folders }}
     steps:
+      - name: Set environment-specific variables
+        run: |
+          # Convert env to uppercase for secret names
+          ENV_UPPER=$(echo "${{ matrix.env }}" | tr '[:lower:]' '[:upper:]')
+          
+          # Use the environment context to get secrets
+          echo "ADMIN_API_URL=${{ secrets[format('{0}_ADMIN_API_URL', matrix.env)] }}" >> $GITHUB_ENV
+          echo "ADMIN_API_AUTH_HEADER=${{ secrets[format('{0}_ADMIN_API_AUTH_HEADER', matrix.env)] }}" >> $GITHUB_ENV
       - name: Checkout branch
         uses: actions/checkout@v3
       - name: Install Deck
         run: |
-          curl -sL https://github.com/Kong/deck/releases/download/v${DECK_VERSION}/deck_${DECK_VERSION}_linux_amd64.tar.gz -o deck.tar.gz
+          curl -sL https://github.com/Kong/deck/releases/download/v${{ env.DECK_VERSION }}/deck_${{ env.DECK_VERSION }}_linux_amd64.tar.gz -o deck.tar.gz
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
         run: |
           deck gateway ping \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
       - name: Validate configs
         run: |
           deck file validate \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             meta.yaml \
             plugin-conf/ \
             services/${{ matrix.folders }}/configs.yaml \
@@ -161,8 +167,8 @@ jobs:
       - name: Check difference between current and new configs
         run: |
           deck gateway diff \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             meta.yaml \
             plugin-conf/ \
             services/${{ matrix.folders }}/configs.yaml \
@@ -170,8 +176,8 @@ jobs:
       - name: Sync config to upstream
         run: |
           deck gateway sync \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             meta.yaml \
             plugin-conf/ \
             services/${{ matrix.folders }}/configs.yaml \
