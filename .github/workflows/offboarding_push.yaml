@@ -12,32 +12,37 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        folders: ["catch-all"]
-        env: [dev]
-        include:
-          - env: dev
-            ADMIN_API_URL: ${{ secrets.DEV_ADMIN_API_URL }}
-            ADMIN_API_AUTH_HEADER: ${{ secrets.DEV_ADMIN_API_AUTH_HEADER }}
+        folders: 
+          - catch-all
+        env: 
+          - dev
     env:
-      DECK_VERSION: ${{ env.DECK_VERSION }}
       DECK_SERVICE_TAG: ${{ matrix.folders }}
     steps:
+      - name: Set environment-specific variables
+        run: |
+          # Convert env to uppercase for secret names
+          ENV_UPPER=$(echo "${{ matrix.env }}" | tr '[:lower:]' '[:upper:]')
+          
+          # Use the environment context to get secrets
+          echo "ADMIN_API_URL=${{ secrets[format('{0}_ADMIN_API_URL', matrix.env)] }}" >> $GITHUB_ENV
+          echo "ADMIN_API_AUTH_HEADER=${{ secrets[format('{0}_ADMIN_API_AUTH_HEADER', matrix.env)] }}" >> $GITHUB_ENV
       - name: Checkout branch
         uses: actions/checkout@v3
       - name: Install Deck
         run: |
-          curl -sL https://github.com/Kong/deck/releases/download/v${DECK_VERSION}/deck_${DECK_VERSION}_linux_amd64.tar.gz -o deck.tar.gz
+          curl -sL https://github.com/Kong/deck/releases/download/v${{ env.DECK_VERSION }}/deck_${{ env.DECK_VERSION }}_linux_amd64.tar.gz -o deck.tar.gz
           tar -xf deck.tar.gz -C /tmp
           sudo cp /tmp/deck /usr/local/bin/
       - name: Check Control plane is reachable
         run: |
-          deck ping \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck gateway ping \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
       - name: Delete Kong entities related to $DECK_SERVICE_TAG-svc tag
         run: |
-          deck reset \
-            --headers "${{ matrix.ADMIN_API_AUTH_HEADER }}" \
-            --kong-addr "${{ matrix.ADMIN_API_URL }}" \
+          deck gateway reset \
+            --headers "${{ env.ADMIN_API_AUTH_HEADER }}" \
+            --kong-addr "${{ env.ADMIN_API_URL }}" \
             --select-tag $DECK_SERVICE_TAG-svc \
             --force
